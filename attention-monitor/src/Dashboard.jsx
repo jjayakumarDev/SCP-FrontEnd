@@ -1,14 +1,9 @@
-import React, {useState} from "react";
-import {Alert, Button, Modal} from 'react-bootstrap';
+import React from "react";
+import {Alert, Button} from 'react-bootstrap';
 import ChartsPage from './ChartsPage';
 import Webcam from 'react-webcam';
 
 function Dashboard(){
-
-    const [show, setShow] = useState(false);
-    const handleClose = () => setShow(false);
-    const handleShow = () => setShow(true);
-
     const WebcamStreamCapture = () => {
         const webcamRef = React.useRef(null);
         const mediaRecorderRef = React.useRef(null);
@@ -78,11 +73,10 @@ function Dashboard(){
                 {recordedChunks.length > 0 && (
                 <Button onClick={handleDownload} variant="success" >Download</Button>
                 )}
-                {userBrowserMedia ? (<div>camera on</div>) : (<div>
-                    <Alert variant='danger'>
-                Accessing Camera is Essential for the Application!<br/>
-                <Button onClick={handleShow} variant="primary" >Allow Camera Access</Button>
-            </Alert>
+                {userBrowserMedia ? (<div>Please make sure your face is fit into the box above.</div>) : (<div>
+                <Alert variant='danger'>
+                    Accessing Camera is Essential for the Application!
+                </Alert>
                 </div>)}
           </>
         );
@@ -90,22 +84,7 @@ function Dashboard(){
     
     return(
         <div class="jumbotron">
-        <Modal show={show} onHide={handleClose}>
-      <Modal.Header closeButton>
-        <Modal.Title>Camera Access</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>Attention Monitor would like to access your Camera!</Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
-          No
-        </Button>
-        <Button variant="primary" onClick={handleClose}>
-          Yes
-        </Button>
-      </Modal.Footer>
-    </Modal>
         <WebcamStreamCapture />
-
         <div class="row w-100">
                 <div class="col-md-3">
                     <div class="card border-info mx-sm-1 p-3">
