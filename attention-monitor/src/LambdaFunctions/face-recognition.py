@@ -3,6 +3,8 @@ import logging
 import boto3
 from botocore.exceptions import ClientError
 
+client = boto3.client('dynamodb')
+
 
 def create_table(table_name, key_schema, attribute_definitions, provisioned_throughput, region):
         
@@ -34,6 +36,18 @@ def store_an_item(region, table_name, item):
         return True
         
         
+def get_item(table_name, key):
+        try:
+            response = client.get_item(TableName=table_name,Key={'id':{'S':key}})
+            item = response['Item']
+            print(response)
+            
+        
+        except ClientError as e:
+            logging.error(e)
+            return False
+        return item
+     
      
 def get_an_item(region, table_name, key):
         try:
@@ -41,45 +55,39 @@ def get_an_item(region, table_name, key):
             table = dynamodb_resource.Table(table_name)
             response = table.get_item(Key=key)
             item = response['Item']
-            print(item)
+            print(response)
+            
         
         except ClientError as e:
             logging.error(e)
             return False
-        return True
+        return item
    
     
 def lambda_handler(event, context):
     
-    if event["httpMethod"] == 'POST':
-        print(event["httpMethod"])
-        
-    if event["httpMethod"] == 'GET':
-        print(event["httpMethod"])
-    
-    
     region = 'us-east-1'
     
-    table_name="music"
+    table_name="face"
     
     key_schema=[
         {
-            "AttributeName": "artist",
+            "AttributeName": "id",
             "KeyType": "HASH"
         },
         {
-            'AttributeName': 'song',
+            'AttributeName': 'faceInfo',
             'KeyType': 'RANGE'
         }
     ]
     
     attribute_definitions=[
         {
-            "AttributeName": "artist",
+            "AttributeName": "id",
             "AttributeType": "S"
         },
         {
-            "AttributeName": "song",
+            "AttributeName": "faceInfo",
             "AttributeType": "S"
         }
         
@@ -90,33 +98,22 @@ def lambda_handler(event, context):
     }
     
     #create_table(table_name, key_schema, attribute_definitions,provisioned_throughput, region)
-   
     
-    item = {
-        "artist": "Pink Floyd",
-        "song": "Us and Them",
-        "album": "The Dark Side of the Moon",
-        "year": 1973
-    }
+    item = {"faceInfo": {"eyeBlink":105, "distraction":5, "confidence":1},"id": "1"}
     
     #store_an_item(region, table_name, item)
     
-    item = {
-        "artist": "Michael Jackson",
-        "song": "Billie Jean",
-        "album": "Thriller",
-        "length_seconds": 294 
-    }
-    
-    #store_an_item(region, table_name, item)
-    
-    key_info={
-        "artist": "Pink Floyd",
-        "song": "Us and Them",
-    }
+    key = event["queryStringParameters"]["id"]
     
     #data = get_an_item(region, table_name, key_info)
-    body = event["body"]
+    if event["httpMethod"] == 'POST':
+        item = event["body"]
+        store_an_item(region, table_name, item)
+        
+    if event["httpMethod"] == 'GET':
+        #result = get_an_item(region, table_name, key_info)
+        result = get_item(table_name, key)
+        print(result)
 
     return {
         'statusCode': 200,
@@ -124,5 +121,5 @@ def lambda_handler(event, context):
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         },
-        'body': json.dumps(body)
+        'body': json.dumps(result)
     }
