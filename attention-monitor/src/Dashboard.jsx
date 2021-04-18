@@ -1,16 +1,97 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
+import * as facemesh from "@tensorflow-models/face-landmarks-detection";
+import Webcam from "react-webcam";
+import { drawMesh } from "./utilities";
 import {Alert, Button} from 'react-bootstrap';
 import ChartsPage from './ChartsPage';
-import Webcam from 'react-webcam';
+import * as tf from "@tensorflow/tfjs";
+import Services from "./services";
 
 function Dashboard(){
+  let eyeBlink = null;
+  let distraction = null;
+  let confidence = null;
     const WebcamStreamCapture = () => {
+        
         const webcamRef = React.useRef(null);
+        const canvasRef = useRef(null);
+        const runFacemesh = async () => {
+          // NEW MODEL
+          const net = await facemesh.load(facemesh.SupportedPackages.mediapipeFacemesh);
+          setInterval(() => {
+            detect(net);
+          }, 300);
+        };
+        const detect = async (net) => {
+          if (
+            typeof webcamRef.current !== "undefined" &&
+            webcamRef.current !== null &&
+            webcamRef.current.video.readyState === 4
+          ) {
+            // Get Video Properties
+            const video = webcamRef.current.video;
+            const videoWidth = webcamRef.current.video.videoWidth;
+            const videoHeight = webcamRef.current.video.videoHeight;
+      
+            // Set video width
+            webcamRef.current.video.width = videoWidth;
+            webcamRef.current.video.height = videoHeight;
+      
+            // Set canvas width
+            canvasRef.current.width = videoWidth;
+            canvasRef.current.height = videoHeight;
+      
+            // Make Detections
+            // OLD MODEL
+            //       const face = await net.estimateFaces(video);
+            // NEW MODEL
+            const face = await net.estimateFaces({input:video});
+            //console.log(face);
+            // Face rotation and Eye blink
+            
+              if (face.length > 0) {
+                const { annotations } = face[0];
+      
+                const [EyeUpperLeftX] = annotations['leftEyeUpper0'][3];
+                const [EyeLowerLeftX] = annotations['leftEyeLower0'][4];
+                
+                const eyePosition = EyeUpperLeftX - EyeLowerLeftX;
+                //depends on the eye size
+                if(eyePosition<2){
+                  //console.log('Eye Blinked')
+                  eyeBlink = eyeBlink + 1;
+                }
+                
+                const [topX, topY] = annotations['midwayBetweenEyes'][0];
+              
+                const [rightX, rightY] = annotations['rightCheek'][0];
+                const [leftX, leftY] = annotations['leftCheek'][0];
+                
+                const bottomX = (rightX + leftX) / 2;
+                const bottomY = (rightY + leftY) / 2;
+              
+                const headDegree = Math.atan((topY - bottomY) / (topX - bottomX));
+                if(headDegree < 0){
+                  //console.log("Distraction");
+                  distraction = distraction + 1;
+                }
+
+                confidence = face[0]['faceInViewConfidence'];
+              }
+             
+            // Get canvas context
+            const ctx = canvasRef.current.getContext("2d");
+            requestAnimationFrame(()=>{drawMesh(face, ctx)});
+          }
+        };
+
+        useEffect(()=>{runFacemesh()}, []);
+
         const mediaRecorderRef = React.useRef(null);
         const [capturing, setCapturing] = React.useState(false);
         const [userBrowserMedia, setUserBrowserMedia] = React.useState(false);
         const [recordedChunks, setRecordedChunks] = React.useState([]);
-      
+        
         const handleStartCaptureClick = React.useCallback(() => {
           setCapturing(true);
           mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
@@ -36,6 +117,15 @@ function Dashboard(){
           mediaRecorderRef.current.stop();
           setCapturing(false);
         }, [mediaRecorderRef, webcamRef, setCapturing]);
+
+        const handleGetResult = React.useCallback(() => {
+          let data = {"id":"1", "faceInfo":{"eyeBlink":eyeBlink, "distraction":distraction, "confidence":confidence}}
+          Services.postFaceDetectionData(data).then((res) => {
+            let result = res.data;
+            console.log(result)
+          }
+        );
+        });
       
         const handleDownload = React.useCallback(() => {
           if (recordedChunks.length) {
@@ -65,6 +155,20 @@ function Dashboard(){
         return (
           <>
                 <Webcam audio={true} ref={webcamRef} onUserMedia={userMedia} onUserMediaError={userMediaError} />
+                <canvas
+                  ref={canvasRef}
+                  style={{
+                    position: "absolute",
+                    marginLeft: "24%",
+                    marginRight: "auto",
+                    left: 0,
+                    right: 0,
+                    textAlign: "center",
+                    zindex: 9,
+                    width: 640,
+                    height: 480,
+                  }}
+                />
                 {capturing ? (
                 <Button onClick={handleStopCaptureClick} variant="danger">Stop Capture</Button>
                 ) : userBrowserMedia && (
@@ -73,6 +177,7 @@ function Dashboard(){
                 {recordedChunks.length > 0 && (
                 <Button onClick={handleDownload} variant="success" >Download</Button>
                 )}
+                <Button onClick={handleGetResult} variant="success" >Result</Button>
                 {userBrowserMedia ? (<div>Please make sure your face is fit into the box above.</div>) : (<div>
                 <Alert variant='danger'>
                     Accessing Camera is Essential for the Application!
@@ -89,21 +194,14 @@ function Dashboard(){
                 <div class="col-md-3">
                     <div class="card border-info mx-sm-1 p-3">
                         <div class="card border-info shadow text-info p-3 my-card"><span class="fa fa-car" aria-hidden="true"></span></div>
-                        <div class="text-info text-center mt-3"><h4>Eye Blink Count</h4></div>
+                        <div class="text-info text-center mt-3"><h4>Eye Rest Level</h4></div>
                         <div class="text-info text-center mt-2"><h1>234</h1></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-success mx-sm-1 p-3">
-                        <div class="card border-success shadow text-success p-3 my-card"><span class="fa fa-eye" aria-hidden="true"></span></div>
-                        <div class="text-success text-center mt-3"><h4>Head Rotation Count</h4></div>
-                        <div class="text-success text-center mt-2"><h1>9332</h1></div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card border-danger mx-sm-1 p-3">
                         <div class="card border-danger shadow text-danger p-3 my-card"><span class="fa fa-heart" aria-hidden="true"></span></div>
-                        <div class="text-danger text-center mt-3"><h4>Distraction Count</h4></div>
+                        <div class="text-danger text-center mt-3"><h4>Distraction Level</h4></div>
                         <div class="text-danger text-center mt-2"><h1>346</h1></div>
                     </div>
                 </div>
