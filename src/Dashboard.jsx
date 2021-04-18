@@ -119,12 +119,34 @@ function Dashboard(){
         }, [mediaRecorderRef, webcamRef, setCapturing]);
 
         const handleGetResult = React.useCallback(() => {
-          let data = {"id":"1", "faceInfo":{"eyeBlink":eyeBlink, "distraction":distraction, "confidence":confidence}}
+          let data = {
+            "faceInfo": {
+              "M": {
+                "confidence": {
+                  "N": confidence
+                },
+                "distraction": {
+                  "N": distraction
+                },
+                "eyeBlink": {
+                  "N": eyeBlink
+                }
+              }
+            },
+            "id": {
+              "S": "6"
+            }
+          }
           Services.postFaceDetectionData(data).then((res) => {
             let result = res.data;
             console.log(result)
           }
         );
+        /*let id = 1;
+        Services.getFaceDetectionData(id).then((res) => {
+          let result = res.data;
+          console.log(result)
+        });*/
         });
       
         const handleDownload = React.useCallback(() => {
