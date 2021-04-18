@@ -3,12 +3,16 @@ import { Pie } from "react-chartjs-2";
 import { MDBContainer } from "mdbreact";
 import {Alert, Button} from 'react-bootstrap';
 import Services from "./services";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
 
 class ChartsPage extends React.Component {
   state = {
     eyeBlink : '0',
     distraction : '0',
     confidence : '1',
+    startDate : new Date(),
     dataPie: ''
   }
 
@@ -37,10 +41,15 @@ class ChartsPage extends React.Component {
   }
 
   render() {
-
+    //const [startDate, setStartDate] = useState(new Date());
     const handleGetResult = () => {
       var date = new Date();
-      let id = date.getDate()+"/"+(date.getMonth()+1)+"/"+date.getFullYear();
+      let id = ""+(date.getMonth()+1)+"/"+date.getDate()+"/"+date.getFullYear()+"";
+      if(this.state.startDate){
+        id = (this.state.startDate.getMonth()+1)+"/"+this.state.startDate.getDate()+"/"+this.state.startDate.getFullYear();
+        console.log(id)
+      }
+      
       Services.getFaceDetectionData(id).then((res) => {
         let result = res.data;
         if(result){
@@ -52,29 +61,79 @@ class ChartsPage extends React.Component {
         console.log(result);
       });
       };
+
+      const getAllFaceResults = () => {
+        Services.getAllResults().then((res) => {
+          var items = res.data;
+          console.log(items)
+          var length = items.length;
+          let eyeInfoValue = 0;
+            let distractionValue = 0;
+            let confideneceValue = 0;
+          for (var i = 0; i < length; i++) {
+            const faceinfo = items[i].faceInfo.M;
+            eyeInfoValue = parseInt(faceinfo.eyeBlink.N) + eyeInfoValue;
+            distractionValue = parseInt(faceinfo.distraction.N) + distractionValue;
+            confideneceValue = parseInt(faceinfo.confidence.N) + confideneceValue;
+          } 
+          eyeInfoValue = eyeInfoValue/length;
+          distractionValue = distractionValue/length;
+          confideneceValue = confideneceValue/length;
+          this.setState({eyeBlink : eyeInfoValue})
+          this.setState({distraction : distractionValue})
+          this.setState({confidence : confideneceValue})
+          console.log(eyeInfoValue+" "+distractionValue+" "+confideneceValue)
+        });
+      };
+
     return (
       <div>
-        <Button onClick={handleGetResult} variant="success" >Result</Button>
-            <div class="row w-100">
-                <div class="col-md-3">
-                    <div class="card border-info mx-sm-1 p-3">
-                        <div class="text-info text-center mt-3"><h4>Eye Rest Level</h4></div>
-                        <div class="text-info text-center mt-2"><h1>{this.state.eyeBlink}</h1></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-danger mx-sm-1 p-3">
-                        <div class="text-danger text-center mt-3"><h4>Distraction Level</h4></div>
-                        <div class="text-danger text-center mt-2"><h1>{this.state.distraction}</h1></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-warning mx-sm-1 p-3">
-                        <div class="text-warning text-center mt-3"><h4>Confident Level</h4></div>
-                        <div class="text-warning text-center mt-2"><h1>{this.state.confidence}</h1></div>
-                    </div>
-                </div>
+        <div class="container">
+          <div class="row">
+          <div class="container">
+            <div class="row">
+            <div class="col-sm">
+            <DatePicker selected={this.state.startDate} onChange={date => this.setState({startDate : date})} />
+              </div>
+              <div class="col-sm">
+              <button class="btn btn-lg btn-block btn-outline-primary" onClick={handleGetResult}>Result</button>
+              </div>
+              <div class="col-sm">
+              <button class="btn btn-lg btn-block btn-outline-primary" onClick={getAllFaceResults} >Overall Result</button>
+              </div>
             </div>
+          </div>
+          </div>
+        </div>
+        <br></br>
+
+        <div class="card-deck mb-3 text-center">
+        <div class="card mb-4 box-shadow">
+          <div class="card-header">
+            <h4 class="my-0 font-weight-normal">Eye Rest Level</h4>
+          </div>
+          <div class="card-body">
+            <h1 class="card-title pricing-card-title">{this.state.eyeBlink}</h1>
+          </div>
+        </div>
+        <div class="card mb-4 box-shadow">
+          <div class="card-header">
+            <h4 class="my-0 font-weight-normal">Distraction Level</h4>
+          </div>
+          <div class="card-body">
+            <h1 class="card-title pricing-card-title">{this.state.distraction}</h1>
+          </div>
+        </div>
+        <div class="card mb-4 box-shadow">
+          <div class="card-header">
+            <h4 class="my-0 font-weight-normal">Confident Level</h4>
+          </div>
+          <div class="card-body">
+            <h1 class="card-title pricing-card-title">{this.state.confidence}</h1>
+          </div>
+        </div>
+      </div>
+
       <MDBContainer>
         <h3 className="mt-5">Report</h3>
         <Pie data={{

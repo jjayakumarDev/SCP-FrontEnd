@@ -117,7 +117,7 @@ function Dashboard(){
       
         const handleStopCaptureClick = React.useCallback(() => {
           mediaRecorderRef.current.stop();
-          let sessionid = date.getDate()+"/"+(date.getMonth()+1)+"/"+date.getFullYear();
+          let sessionid = (date.getMonth()+1)+"/"+date.getDate()+"/"+date.getFullYear();
           let data = {
             "faceInfo": {
               "M": {
@@ -170,34 +170,32 @@ function Dashboard(){
 
         return (
           <>
-                <Webcam audio={true} ref={webcamRef} onUserMedia={userMedia} onUserMediaError={userMediaError} />
-                <canvas
-                  ref={canvasRef}
-                  style={{
-                    position: "absolute",
-                    marginLeft: "24%",
-                    marginRight: "auto",
-                    left: 0,
-                    right: 0,
-                    textAlign: "center",
-                    zindex: 9,
-                    width: 640,
-                    height: 480,
-                  }}
-                />
-                {capturing ? (
-                <Button onClick={handleStopCaptureClick} variant="danger">Stop Capture</Button>
+          <div class="card mb-4 box-shadow">
+          <div class="card-header">
+            <h4 class="my-0 font-weight-normal">Face Attention Monitor</h4> 
+          </div>
+          <div class="card-body">
+            <Webcam audio={true} ref={webcamRef} onUserMedia={userMedia} onUserMediaError={userMediaError} />
+            <canvas ref={canvasRef} style={{position: "absolute", marginLeft: "24%", marginRight: "auto", left: 0, right: 0, textAlign: "center", zindex: 9, width: 640, height: 480, }}/>
+            {capturing ? (
+                  <div class="container">
+                    <button type="button" class="btn btn-lg btn-block btn-outline-primary" onClick={handleStopCaptureClick} >Stop Capture</button>
+                    </div>
                 ) : userBrowserMedia && (
-                <Button onClick={handleStartCaptureClick} variant="success" >Start Capture</Button>
+                  <div class="container">
+                  <button class="btn btn-lg btn-block btn-outline-primary" onClick={handleStartCaptureClick} >Start Capture</button>
+                </div>
                 )}
                 {recordedChunks.length > 0 && (
-                <Button onClick={handleDownload} variant="success" >Download</Button>
+                <button class="btn btn-lg btn-block btn-outline-primary" onClick={handleDownload} >Download</button>
                 )}
                 {userBrowserMedia ? (<div>Please make sure your face is fit into the box above.</div>) : (<div>
                 <Alert variant='danger'>
                     Accessing Camera is Essential for the Application!
                 </Alert>
                 </div>)}
+            </div>
+          </div>
           </>
         );
       };
