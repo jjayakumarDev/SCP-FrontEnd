@@ -47,22 +47,19 @@ def get_item(table_name, key):
             logging.error(e)
             return False
         return item
-     
-     
-def get_an_item(region, table_name, key):
+        
+
+def put_item(table_name, item):
         try:
-            dynamodb_resource = boto3.resource("dynamodb", region_name=region)
-            table = dynamodb_resource.Table(table_name)
-            response = table.get_item(Key=key)
-            item = response['Item']
-            print(response)
+            response = client.put_item(TableName=table_name,Item=item)
+            print(item)
             
         
         except ClientError as e:
             logging.error(e)
             return False
-        return item
-   
+        return True
+     
     
 def lambda_handler(event, context):
     
@@ -99,19 +96,18 @@ def lambda_handler(event, context):
     
     #create_table(table_name, key_schema, attribute_definitions,provisioned_throughput, region)
     
-    item = {"faceInfo": {"eyeBlink":105, "distraction":5, "confidence":1},"id": "1"}
+    #item = {"faceInfo": {"eyeBlink":105, "distraction":5, "confidence":1},"id": "2"}
     
     #store_an_item(region, table_name, item)
     
-    key = event["queryStringParameters"]["id"]
-    
     #data = get_an_item(region, table_name, key_info)
     if event["httpMethod"] == 'POST':
-        item = event["body"]
-        store_an_item(region, table_name, item)
+        item = json.loads(event["body"])
+        result = put_item(table_name, item)
         
     if event["httpMethod"] == 'GET':
         #result = get_an_item(region, table_name, key_info)
+        key = event["queryStringParameters"]["id"]
         result = get_item(table_name, key)
         print(result)
 
@@ -119,7 +115,9 @@ def lambda_handler(event, context):
         'statusCode': 200,
         'headers': { 
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
+          "Access-Control-Allow-Headers" : "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
         },
         'body': json.dumps(result)
     }

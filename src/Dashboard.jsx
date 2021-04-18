@@ -8,9 +8,10 @@ import * as tf from "@tensorflow/tfjs";
 import Services from "./services";
 
 function Dashboard(){
-  let eyeBlink = null;
-  let distraction = null;
-  let confidence = null;
+  let eyeBlink = 0;
+  let distraction = 0;
+  let confidence = 1;
+  var date = new Date();
     const WebcamStreamCapture = () => {
         
         const webcamRef = React.useRef(null);
@@ -85,7 +86,7 @@ function Dashboard(){
           }
         };
 
-        useEffect(()=>{runFacemesh()}, []);
+        //useEffect(()=>{runFacemesh()}, []);
 
         const mediaRecorderRef = React.useRef(null);
         const [capturing, setCapturing] = React.useState(false);
@@ -94,6 +95,7 @@ function Dashboard(){
         
         const handleStartCaptureClick = React.useCallback(() => {
           setCapturing(true);
+          runFacemesh();
           mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
             mimeType: "video/webm"
           });
@@ -115,39 +117,31 @@ function Dashboard(){
       
         const handleStopCaptureClick = React.useCallback(() => {
           mediaRecorderRef.current.stop();
-          setCapturing(false);
-        }, [mediaRecorderRef, webcamRef, setCapturing]);
-
-        const handleGetResult = React.useCallback(() => {
+          let sessionid = date.getDate()+"/"+(date.getMonth()+1)+"/"+date.getFullYear();
           let data = {
             "faceInfo": {
               "M": {
                 "confidence": {
-                  "N": confidence
+                  "N": ""+confidence+""
                 },
                 "distraction": {
-                  "N": distraction
+                  "N": ""+distraction+""
                 },
                 "eyeBlink": {
-                  "N": eyeBlink
+                  "N": ""+eyeBlink+""
                 }
               }
             },
             "id": {
-              "S": "6"
+              "S": ""+sessionid+""
             }
           }
           Services.postFaceDetectionData(data).then((res) => {
             let result = res.data;
             console.log(result)
-          }
-        );
-        /*let id = 1;
-        Services.getFaceDetectionData(id).then((res) => {
-          let result = res.data;
-          console.log(result)
-        });*/
-        });
+          });
+          setCapturing(false);
+        }, [mediaRecorderRef, webcamRef, setCapturing]);
       
         const handleDownload = React.useCallback(() => {
           if (recordedChunks.length) {
@@ -199,7 +193,6 @@ function Dashboard(){
                 {recordedChunks.length > 0 && (
                 <Button onClick={handleDownload} variant="success" >Download</Button>
                 )}
-                <Button onClick={handleGetResult} variant="success" >Result</Button>
                 {userBrowserMedia ? (<div>Please make sure your face is fit into the box above.</div>) : (<div>
                 <Alert variant='danger'>
                     Accessing Camera is Essential for the Application!
@@ -212,29 +205,6 @@ function Dashboard(){
     return(
         <div class="jumbotron">
         <WebcamStreamCapture />
-        <div class="row w-100">
-                <div class="col-md-3">
-                    <div class="card border-info mx-sm-1 p-3">
-                        <div class="card border-info shadow text-info p-3 my-card"><span class="fa fa-car" aria-hidden="true"></span></div>
-                        <div class="text-info text-center mt-3"><h4>Eye Rest Level</h4></div>
-                        <div class="text-info text-center mt-2"><h1>234</h1></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-danger mx-sm-1 p-3">
-                        <div class="card border-danger shadow text-danger p-3 my-card"><span class="fa fa-heart" aria-hidden="true"></span></div>
-                        <div class="text-danger text-center mt-3"><h4>Distraction Level</h4></div>
-                        <div class="text-danger text-center mt-2"><h1>346</h1></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-warning mx-sm-1 p-3">
-                        <div class="card border-warning shadow text-warning p-3 my-card"><span class="fa fa-inbox" aria-hidden="true"></span></div>
-                        <div class="text-warning text-center mt-3"><h4>Confident Level</h4></div>
-                        <div class="text-warning text-center mt-2"><h1>346</h1></div>
-                    </div>
-                </div>
-            </div>
             <ChartsPage/>
 </div>
     );
