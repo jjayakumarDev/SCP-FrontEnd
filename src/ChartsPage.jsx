@@ -5,6 +5,7 @@ import {Alert, Button} from 'react-bootstrap';
 import Services from "./services";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import "./App.css"
 
 
 class ChartsPage extends React.Component {
