@@ -17,12 +17,13 @@ function Dashboard(){
         const webcamRef = React.useRef(null);
         const canvasRef = useRef(null);
         const runFacemesh = async () => {
-          // NEW MODEL
           const net = await facemesh.load(facemesh.SupportedPackages.mediapipeFacemesh);
           setInterval(() => {
             detect(net);
           }, 300);
         };
+
+        //Start detect face
         const detect = async (net) => {
           if (
             typeof webcamRef.current !== "undefined" &&
@@ -42,12 +43,8 @@ function Dashboard(){
             canvasRef.current.width = videoWidth;
             canvasRef.current.height = videoHeight;
       
-            // Make Detections
-            // OLD MODEL
-            //       const face = await net.estimateFaces(video);
-            // NEW MODEL
+            // Make Detection
             const face = await net.estimateFaces({input:video});
-            //console.log(face);
             // Face rotation and Eye blink
             
               if (face.length > 0) {
@@ -59,7 +56,6 @@ function Dashboard(){
                 const eyePosition = EyeUpperLeftX - EyeLowerLeftX;
                 //depends on the eye size
                 if(eyePosition<2){
-                  //console.log('Eye Blinked')
                   eyeBlink = eyeBlink + 1;
                 }
                 
@@ -73,7 +69,6 @@ function Dashboard(){
               
                 const headDegree = Math.atan((topY - bottomY) / (topX - bottomX));
                 if(headDegree < 0){
-                  //console.log("Distraction");
                   distraction = distraction + 1;
                 }
 
@@ -86,13 +81,12 @@ function Dashboard(){
           }
         };
 
-        //useEffect(()=>{runFacemesh()}, []);
-
         const mediaRecorderRef = React.useRef(null);
         const [capturing, setCapturing] = React.useState(false);
         const [userBrowserMedia, setUserBrowserMedia] = React.useState(false);
         const [recordedChunks, setRecordedChunks] = React.useState([]);
         
+        // Start video capture method handling
         const handleStartCaptureClick = React.useCallback(() => {
           setCapturing(true);
           runFacemesh();
@@ -115,6 +109,7 @@ function Dashboard(){
           [setRecordedChunks]
         );
       
+        // Stop capture the video
         const handleStopCaptureClick = React.useCallback(() => {
           mediaRecorderRef.current.stop();
           let sessionid = (date.getMonth()+1)+"/"+date.getDate()+"/"+date.getFullYear();
@@ -143,12 +138,14 @@ function Dashboard(){
           setCapturing(false);
         }, [mediaRecorderRef, webcamRef, setCapturing]);
       
+        // Download method handling
         const handleDownload = React.useCallback(() => {
           if (recordedChunks.length) {
             const blob = new Blob(recordedChunks, {
               type: "video/webm"
             });
             const url = URL.createObjectURL(blob);
+            console.log(blob)
             const a = document.createElement("a");
             document.body.appendChild(a);
             a.style = "display: none";
@@ -175,25 +172,43 @@ function Dashboard(){
             <h4 class="my-0 font-weight-normal">Face Attention Monitor</h4> 
           </div>
           <div class="card-body">
-            <Webcam audio={true} ref={webcamRef} onUserMedia={userMedia} onUserMediaError={userMediaError} />
-            <canvas ref={canvasRef} style={{position: "absolute", marginLeft: "24%", marginRight: "auto", left: 0, right: 0, textAlign: "center", zindex: 9, width: 640, height: 480, }}/>
-            {capturing ? (
-                  <div class="container">
+            <div class="container">
+              <div class="row padding-left20">
+                <Webcam audio={true} ref={webcamRef} onUserMedia={userMedia} onUserMediaError={userMediaError} />
+                <canvas ref={canvasRef} style={{position: "absolute", width: 640, height: 480}}/>
+              </div>
+            </div>
+
+            <div class="container">
+              <div class="row">
+              <div class="container">
+                <div class="row">
+                
+                {capturing ? (
+                    <div class="col-sm">
                     <button type="button" class="btn btn-lg btn-block btn-outline-primary" onClick={handleStopCaptureClick} >Stop Capture</button>
                     </div>
                 ) : userBrowserMedia && (
-                  <div class="container">
+                  <div class="col-sm">
                   <button class="btn btn-lg btn-block btn-outline-primary" onClick={handleStartCaptureClick} >Start Capture</button>
-                </div>
+                  </div>
                 )}
                 {recordedChunks.length > 0 && (
+                <div class="col-sm">
                 <button class="btn btn-lg btn-block btn-outline-primary" onClick={handleDownload} >Download</button>
+                </div>
                 )}
+                </div>
                 {userBrowserMedia ? (<div>Please make sure your face is fit into the box above.</div>) : (<div>
                 <Alert variant='danger'>
                     Accessing Camera is Essential for the Application!
                 </Alert>
                 </div>)}
+                  
+              </div>
+              </div>
+            </div>
+
             </div>
           </div>
           </>

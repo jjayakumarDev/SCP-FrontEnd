@@ -14,7 +14,8 @@ class ChartsPage extends React.Component {
     distraction : '0',
     confidence : '1',
     startDate : new Date(),
-    dataPie: ''
+    dataPie: '',
+    report : ''
   }
 
   componentDidMount(){
@@ -87,6 +88,27 @@ class ChartsPage extends React.Component {
         });
       };
 
+
+      const getReport = () => {
+        Services.getReport().then((res) => {
+          var reportFile = res.data;
+          this.setState({report : reportFile})
+          console.log(reportFile)
+          const file = new Blob([reportFile], {
+            type: "text/plain"
+          });
+          const url = URL.createObjectURL(file);
+          const a = document.createElement("a");
+          document.body.appendChild(a);
+          a.style = "display: none";
+          a.href = url;
+          a.download = "Report.html";
+          a.click();
+          window.URL.revokeObjectURL(url);
+        });
+      };
+
+
     return (
       <div>
         <div class="container">
@@ -101,6 +123,9 @@ class ChartsPage extends React.Component {
               </div>
               <div class="col-sm">
               <button class="btn btn-lg btn-block btn-outline-primary" onClick={getAllFaceResults} >Overall Result</button>
+              </div>
+              <div class="col-sm">
+              <button class="btn btn-lg btn-block btn-outline-primary" onClick={getReport} >Download Report</button>
               </div>
             </div>
           </div>
